@@ -9,15 +9,20 @@ import {
 } from 'react-native';
 import { styles } from '@/app/styles';
 import { Process } from '@/app/types';
+import { AlgorithmSelector, Algorithm } from './AlgorithmSelector';
 
 interface ProcessInputProps {
   onAddProcess: (process: Process) => void;
   existingProcessIds: string[];
+  selectedAlgorithm: Algorithm;
+  onAlgorithmChange: (algorithm: Algorithm) => void;
 }
 
 export const ProcessInput: React.FC<ProcessInputProps> = ({
   onAddProcess,
   existingProcessIds,
+  selectedAlgorithm,
+  onAlgorithmChange,
 }) => {
   const [processId, setProcessId] = useState('');
   const [arrivalTime, setArrivalTime] = useState('');
@@ -72,66 +77,74 @@ export const ProcessInput: React.FC<ProcessInputProps> = ({
   };
 
   return (
-    <Animated.View style={[styles.card, { transform: [{ scale: scaleAnim }] }]}>
-      <Text style={styles.cardTitle}>✨ Thêm Process</Text>
+    <View>
+      <Animated.View style={[styles.card, { transform: [{ scale: scaleAnim }] }]}>
+        <Text style={styles.cardTitle}>✨ Thêm Process</Text>
 
-      <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Process ID:</Text>
-        <TextInput
-          style={[
-            styles.textInput,
-            focusedInput === 'processId' && styles.textInputFocused,
-          ]}
-          value={processId}
-          onChangeText={setProcessId}
-          placeholder="Nhập Process ID (vd: P1)"
-          placeholderTextColor="#64748b"
-          onFocus={() => setFocusedInput('processId')}
-          onBlur={() => setFocusedInput(null)}
-        />
-      </View>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Process ID:</Text>
+          <TextInput
+            style={[
+              styles.textInput,
+              focusedInput === 'processId' && styles.textInputFocused,
+            ]}
+            value={processId}
+            onChangeText={setProcessId}
+            placeholder="Nhập Process ID (vd: P1)"
+            placeholderTextColor="#64748b"
+            onFocus={() => setFocusedInput('processId')}
+            onBlur={() => setFocusedInput(null)}
+          />
+        </View>
 
-      <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Arrival Time:</Text>
-        <TextInput
-          style={[
-            styles.textInput,
-            focusedInput === 'arrivalTime' && styles.textInputFocused,
-          ]}
-          value={arrivalTime}
-          onChangeText={setArrivalTime}
-          placeholder="Nhập thời gian đến"
-          placeholderTextColor="#64748b"
-          keyboardType="numeric"
-          onFocus={() => setFocusedInput('arrivalTime')}
-          onBlur={() => setFocusedInput(null)}
-        />
-      </View>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Arrival Time:</Text>
+          <TextInput
+            style={[
+              styles.textInput,
+              focusedInput === 'arrivalTime' && styles.textInputFocused,
+            ]}
+            value={arrivalTime}
+            onChangeText={setArrivalTime}
+            placeholder="Nhập thời gian đến"
+            placeholderTextColor="#64748b"
+            keyboardType="numeric"
+            onFocus={() => setFocusedInput('arrivalTime')}
+            onBlur={() => setFocusedInput(null)}
+          />
+        </View>
 
-      <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Burst Time:</Text>
-        <TextInput
-          style={[
-            styles.textInput,
-            focusedInput === 'burstTime' && styles.textInputFocused,
-          ]}
-          value={burstTime}
-          onChangeText={setBurstTime}
-          placeholder="Nhập thời gian thực thi"
-          placeholderTextColor="#64748b"
-          keyboardType="numeric"
-          onFocus={() => setFocusedInput('burstTime')}
-          onBlur={() => setFocusedInput(null)}
-        />
-      </View>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Burst Time:</Text>
+          <TextInput
+            style={[
+              styles.textInput,
+              focusedInput === 'burstTime' && styles.textInputFocused,
+            ]}
+            value={burstTime}
+            onChangeText={setBurstTime}
+            placeholder="Nhập thời gian thực thi"
+            placeholderTextColor="#64748b"
+            keyboardType="numeric"
+            onFocus={() => setFocusedInput('burstTime')}
+            onBlur={() => setFocusedInput(null)}
+          />
+        </View>
 
-      <TouchableOpacity
-        style={styles.primaryButton}
-        onPress={handleAddProcess}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.primaryButtonText}>➕ Thêm Process</Text>
-      </TouchableOpacity>
-    </Animated.View>
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={handleAddProcess}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.primaryButtonText}>➕ Thêm Process</Text>
+        </TouchableOpacity>
+      </Animated.View>
+
+      {/* Algorithm Selector below the Add Process card */}
+      <AlgorithmSelector
+        selectedAlgorithm={selectedAlgorithm}
+        onAlgorithmChange={onAlgorithmChange}
+      />
+    </View>
   );
 };

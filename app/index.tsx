@@ -1,22 +1,24 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
   Alert,
   Animated,
+  ScrollView,
+  Text,
+  View,
 } from 'react-native';
-import { styles } from './styles';
-import { Process, FCFSResult } from './types';
-import { FCFS } from './algorithms/fcfs';
+import { Algorithm } from '../components/AlgorithmSelector';
+import { GanttChart } from '../components/GanttChart';
 import { ProcessInput } from '../components/ProcessInput';
 import { ProcessList } from '../components/ProcessList';
 import { ResultsTable } from '../components/ResultsTable';
-import { GanttChart } from '../components/GanttChart';
+import { FCFS } from './algorithms/fcfs';
+import { styles } from './styles';
+import { FCFSResult, Process } from './types';
 
 export default function Index() {
   const [processes, setProcesses] = useState<Process[]>([]);
   const [result, setResult] = useState<FCFSResult | null>(null);
+  const [selectedAlgorithm, setSelectedAlgorithm] = useState<Algorithm>('FCFS');
   
   // Animation refs
   const headerFadeAnim = useRef(new Animated.Value(0)).current;
@@ -82,13 +84,22 @@ export default function Index() {
     }
 
     try {
-      const simulationResult = FCFS(processes);
+      let simulationResult: FCFSResult;
+      
+      // For now, only FCFS is implemented
+      switch (selectedAlgorithm) {
+        case 'FCFS':
+        default:
+          simulationResult = FCFS(processes);
+          break;
+      }
+      
       setResult(simulationResult);
       
       // Show success message
       Alert.alert(
         'Thành công! 🎉',
-        `Đã hoàn thành simulation cho ${processes.length} processes`,
+        `Đã hoàn thành simulation với thuật toán ${selectedAlgorithm} cho ${processes.length} processes`,
         [{ text: 'OK', style: 'default' }]
       );
     } catch (error) {
@@ -116,6 +127,14 @@ export default function Index() {
         },
       ]
     );
+  };
+
+  const handleAlgorithmChange = (algorithm: Algorithm) => {
+    setSelectedAlgorithm(algorithm);
+    // Clear results when algorithm changes
+    if (result) {
+      setResult(null);
+    }
   };
 
   const existingProcessIds = processes.map(p => p.id);
@@ -151,11 +170,13 @@ export default function Index() {
 
         {/* Process Input and List in Same Row */}
         <View style={styles.twoColumnContainer}>
-          {/* Process Input Component */}
+          {/* Process Input Component with Algorithm Selector */}
           <View style={styles.leftColumn}>
             <ProcessInput
               onAddProcess={handleAddProcess}
               existingProcessIds={existingProcessIds}
+              selectedAlgorithm={selectedAlgorithm}
+              onAlgorithmChange={handleAlgorithmChange}
             />
           </View>
 
@@ -211,12 +232,12 @@ export default function Index() {
             borderLeftColor: '#3b82f6',
           }}>
             <Text style={[styles.legendText, { color: '#3b82f6', fontWeight: '700', marginBottom: 8 }]}>
-              💡 Thuật toán FCFS:
+              💡 Thuật toán {selectedAlgorithm}:
             </Text>
             <Text style={[styles.legendText, { fontSize: 14, lineHeight: 20 }]}>
-              Processes được thực thi theo thứ tự đến trước, phục vụ trước. 
-              Thuật toán đơn giản nhất nhưng có thể gây ra hiện tượng Convoy Effect 
-              khi process có burst time dài đến trước.
+              {selectedAlgorithm === 'FCFS' 
+                ? 'Processes được thực thi theo thứ tự đến trước, phục vụ trước. Thuật toán đơn giản nhất nhưng có thể gây ra hiện tượng Convoy Effect khi process có burst time dài đến trước.'
+                : 'Mô tả thuật toán sẽ được cập nhật khi thêm thuật toán mới.'}
             </Text>
           </View>
         </View>
