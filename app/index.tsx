@@ -12,13 +12,19 @@ import { ProcessInput } from '../components/ProcessInput';
 import { ProcessList } from '../components/ProcessList';
 import { ResultsTable } from '../components/ResultsTable';
 import { FCFS } from './algorithms/fcfs';
+import { SJF } from './algorithms/sjf';
+import { SRTF } from './algorithms/srtf';
+import { RoundRobin } from './algorithms/roundrobin';
 import { styles } from './styles';
-import { FCFSResult, Process } from './types';
+import { FCFSResult, SJFResult, SRTFResult, RoundRobinResult, Process } from './types';
+
+type AllResults = FCFSResult | SJFResult | SRTFResult | RoundRobinResult;
 
 export default function Index() {
   const [processes, setProcesses] = useState<Process[]>([]);
-  const [result, setResult] = useState<FCFSResult | null>(null);
+  const [result, setResult] = useState<AllResults | null>(null);
   const [selectedAlgorithm, setSelectedAlgorithm] = useState<Algorithm>('FCFS');
+  const [timeQuantum, setTimeQuantum] = useState<number>(2);
   
   // Animation refs
   const headerFadeAnim = useRef(new Animated.Value(0)).current;
@@ -84,11 +90,25 @@ export default function Index() {
     }
 
     try {
-      let simulationResult: FCFSResult;
+      let simulationResult: AllResults;
       
-      // For now, only FCFS is implemented
       switch (selectedAlgorithm) {
         case 'FCFS':
+          simulationResult = FCFS(processes);
+          break;
+        case 'SJF':
+          simulationResult = SJF(processes);
+          break;
+        case 'SRTF':
+          simulationResult = SRTF(processes);
+          break;
+        case 'RoundRobin':
+          if (timeQuantum <= 0) {
+            Alert.alert('Lỗi', 'Time quantum phải lớn hơn 0');
+            return;
+          }
+          simulationResult = RoundRobin(processes, timeQuantum);
+          break;
         default:
           simulationResult = FCFS(processes);
           break;
@@ -137,6 +157,21 @@ export default function Index() {
     }
   };
 
+  const getAlgorithmDescription = (algorithm: Algorithm): string => {
+    switch (algorithm) {
+      case 'FCFS':
+        return 'Processes được thực thi theo thứ tự đến trước, phục vụ trước. Thuật toán đơn giản nhất nhưng có thể gây ra hiện tượng Convoy Effect khi process có burst time dài đến trước.';
+      case 'SJF':
+        return 'Chọn process có burst time ngắn nhất để thực thi trước. Giảm thiểu average waiting time nhưng có thể gây starvation cho processes có burst time dài.';
+      case 'SRTF':
+        return 'Phiên bản preemptive của SJF. Process đang chạy có thể bị ngắt nếu có process mới đến với remaining time ngắn hơn. Tối ưu về average waiting time.';
+      case 'RoundRobin':
+        return `Mỗi process được cấp phát một time quantum (${timeQuantum}ms) để thực thi. Sau khi hết time quantum, process sẽ được đưa vào cuối hàng đợi. Đảm bảo fairness và phản hồi nhanh.`;
+      default:
+        return '';
+    }
+  };
+
   const existingProcessIds = processes.map(p => p.id);
 
   return (
@@ -177,6 +212,8 @@ export default function Index() {
               existingProcessIds={existingProcessIds}
               selectedAlgorithm={selectedAlgorithm}
               onAlgorithmChange={handleAlgorithmChange}
+              timeQuantum={timeQuantum}
+              onTimeQuantumChange={setTimeQuantum}
             />
           </View>
 
@@ -235,9 +272,7 @@ export default function Index() {
               💡 Thuật toán {selectedAlgorithm}:
             </Text>
             <Text style={[styles.legendText, { fontSize: 14, lineHeight: 20 }]}>
-              {selectedAlgorithm === 'FCFS' 
-                ? 'Processes được thực thi theo thứ tự đến trước, phục vụ trước. Thuật toán đơn giản nhất nhưng có thể gây ra hiện tượng Convoy Effect khi process có burst time dài đến trước.'
-                : 'Mô tả thuật toán sẽ được cập nhật khi thêm thuật toán mới.'}
+              {getAlgorithmDescription(selectedAlgorithm)}
             </Text>
           </View>
         </View>

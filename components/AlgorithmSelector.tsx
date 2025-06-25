@@ -9,7 +9,7 @@ import {
     View,
 } from 'react-native';
 
-export type Algorithm = 'FCFS';
+export type Algorithm = 'FCFS' | 'SJF' | 'SRTF' | 'RoundRobin';
 
 interface AlgorithmSelectorProps {
   selectedAlgorithm: Algorithm;
@@ -21,6 +21,21 @@ const algorithms: { value: Algorithm; label: string; description: string }[] = [
     value: 'FCFS',
     label: 'First Come First Served (FCFS)',
     description: 'Processes được thực thi theo thứ tự đến trước, phục vụ trước'
+  },
+  {
+    value: 'SJF',
+    label: 'Shortest Job First (SJF)',
+    description: 'Thực thi process có burst time ngắn nhất trước'
+  },
+  {
+    value: 'SRTF',
+    label: 'Shortest Remaining Time First (SRTF)',
+    description: 'Preemptive SJF - chọn process có thời gian còn lại ngắn nhất'
+  },
+  {
+    value: 'RoundRobin',
+    label: 'Round Robin (RR)',
+    description: 'Mỗi process được thực thi trong time quantum, sau đó chuyển sang process tiếp theo'
   }
 ];
 
@@ -47,7 +62,6 @@ export const AlgorithmSelector: React.FC<AlgorithmSelectorProps> = ({
     
     setIsDropdownOpen(true);
   };
-
 
   const handleAlgorithmSelect = (algorithm: Algorithm) => {
     onAlgorithmChange(algorithm);

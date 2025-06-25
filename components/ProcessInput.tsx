@@ -1,21 +1,23 @@
+// components/ProcessInput.tsx
+import { styles } from '@/app/styles';
+import { Process } from '@/app/types';
 import React, { useState } from 'react';
 import {
-  View,
+  Alert,
   Text,
   TextInput,
   TouchableOpacity,
-  Alert,
-  Animated,
+  View,
 } from 'react-native';
-import { styles } from '@/app/styles';
-import { Process } from '@/app/types';
-import { AlgorithmSelector, Algorithm } from './AlgorithmSelector';
+import { Algorithm, AlgorithmSelector } from './AlgorithmSelector';
 
 interface ProcessInputProps {
   onAddProcess: (process: Process) => void;
   existingProcessIds: string[];
   selectedAlgorithm: Algorithm;
   onAlgorithmChange: (algorithm: Algorithm) => void;
+  timeQuantum?: number;
+  onTimeQuantumChange?: (timeQuantum: number) => void;
 }
 
 export const ProcessInput: React.FC<ProcessInputProps> = ({
@@ -23,111 +25,169 @@ export const ProcessInput: React.FC<ProcessInputProps> = ({
   existingProcessIds,
   selectedAlgorithm,
   onAlgorithmChange,
+  timeQuantum = 2,
+  onTimeQuantumChange,
 }) => {
   const [processId, setProcessId] = useState('');
   const [arrivalTime, setArrivalTime] = useState('');
   const [burstTime, setBurstTime] = useState('');
-  const [focusedInput, setFocusedInput] = useState<string | null>(null);
-  
-  const scaleAnim = new Animated.Value(1);
+  const [priority, setPriority] = useState('');
+  const [inputFocused, setInputFocused] = useState<string | null>(null);
 
   const handleAddProcess = () => {
-    if (!processId.trim() || !arrivalTime.trim() || !burstTime.trim()) {
-      Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ thông tin process');
-      return;
-    }
-
-    const arrival = parseInt(arrivalTime);
-    const burst = parseInt(burstTime);
-
-    if (isNaN(arrival) || isNaN(burst) || arrival < 0 || burst <= 0) {
-      Alert.alert('Lỗi', 'Arrival time phải >= 0 và Burst time phải > 0');
+    // Validation
+    if (!processId.trim()) {
+      Alert.alert('Lỗi', 'Vui lòng nhập Process ID');
       return;
     }
 
     if (existingProcessIds.includes(processId.trim())) {
-      Alert.alert('Lỗi', 'Process ID đã tồn tại');
+      Alert.alert('Lỗi', `Process ID "${processId.trim()}" đã tồn tại`);
+      return;
+    }
+
+    const arrivalTimeNum = parseInt(arrivalTime);
+    const burstTimeNum = parseInt(burstTime);
+    const priorityNum = priority ? parseInt(priority) : undefined;
+
+    if (isNaN(arrivalTimeNum) || arrivalTimeNum < 0) {
+      Alert.alert('Lỗi', 'Arrival Time phải là số nguyên không âm');
+      return;
+    }
+
+    if (isNaN(burstTimeNum) || burstTimeNum <= 0) {
+      Alert.alert('Lỗi', 'Burst Time phải là số nguyên dương');
+      return;
+    }
+
+    if (priority && (isNaN(priorityNum as number) || (priorityNum as number) < 0)) {
+      Alert.alert('Lỗi', 'Priority phải là số nguyên không âm');
       return;
     }
 
     const newProcess: Process = {
       id: processId.trim(),
-      arrivalTime: arrival,
-      burstTime: burst,
+      arrivalTime: arrivalTimeNum,
+      burstTime: burstTimeNum,
+      priority: priorityNum,
     };
 
-    // Animation
-    Animated.sequence([
-      Animated.timing(scaleAnim, {
-        toValue: 0.95,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
     onAddProcess(newProcess);
+
+    // Clear form
     setProcessId('');
     setArrivalTime('');
     setBurstTime('');
+    setPriority('');
+  };
+
+  const handleTimeQuantumChange = (value: string) => {
+    const num = parseInt(value);
+    if (!isNaN(num) && num > 0 && onTimeQuantumChange) {
+      onTimeQuantumChange(num);
+    }
   };
 
   return (
     <View>
-      <Animated.View style={[styles.card, { transform: [{ scale: scaleAnim }] }]}>
-        <Text style={styles.cardTitle}>✨ Thêm Process</Text>
+      {/* Algorithm Selector */}
+      <AlgorithmSelector
+        selectedAlgorithm={selectedAlgorithm}
+        onAlgorithmChange={onAlgorithmChange}
+      />
 
+      {/* Time Quantum Input for Round Robin */}
+      {selectedAlgorithm === 'RoundRobin' && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>⏱️ Time Quantum</Text>
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Time Quantum (ms)</Text>
+            <TextInput
+              style={[
+                styles.textInput,
+                inputFocused === 'timeQuantum' && styles.textInputFocused,
+              ]}
+              value={timeQuantum.toString()}
+              onChangeText={handleTimeQuantumChange}
+              placeholder="Nhập time quantum..."
+              placeholderTextColor="#64748b"
+              keyboardType="numeric"
+              onFocus={() => setInputFocused('timeQuantum')}
+              onBlur={() => setInputFocused(null)}
+            />
+          </View>
+        </View>
+      )}
+
+      {/* Process Input Form */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>➕ Thêm Process</Text>
+        
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Process ID:</Text>
+          <Text style={styles.inputLabel}>Process ID</Text>
           <TextInput
             style={[
               styles.textInput,
-              focusedInput === 'processId' && styles.textInputFocused,
+              inputFocused === 'processId' && styles.textInputFocused,
             ]}
             value={processId}
             onChangeText={setProcessId}
-            placeholder="Nhập Process ID (vd: P1)"
+            placeholder="Ví dụ: P1, P2, P3..."
             placeholderTextColor="#64748b"
-            onFocus={() => setFocusedInput('processId')}
-            onBlur={() => setFocusedInput(null)}
+            onFocus={() => setInputFocused('processId')}
+            onBlur={() => setInputFocused(null)}
           />
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Arrival Time:</Text>
+          <Text style={styles.inputLabel}>Arrival Time</Text>
           <TextInput
             style={[
               styles.textInput,
-              focusedInput === 'arrivalTime' && styles.textInputFocused,
+              inputFocused === 'arrivalTime' && styles.textInputFocused,
             ]}
             value={arrivalTime}
             onChangeText={setArrivalTime}
-            placeholder="Nhập thời gian đến"
+            placeholder="Thời điểm process đến..."
             placeholderTextColor="#64748b"
             keyboardType="numeric"
-            onFocus={() => setFocusedInput('arrivalTime')}
-            onBlur={() => setFocusedInput(null)}
+            onFocus={() => setInputFocused('arrivalTime')}
+            onBlur={() => setInputFocused(null)}
           />
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Burst Time:</Text>
+          <Text style={styles.inputLabel}>Burst Time</Text>
           <TextInput
             style={[
               styles.textInput,
-              focusedInput === 'burstTime' && styles.textInputFocused,
+              inputFocused === 'burstTime' && styles.textInputFocused,
             ]}
             value={burstTime}
             onChangeText={setBurstTime}
-            placeholder="Nhập thời gian thực thi"
+            placeholder="Thời gian thực thi..."
             placeholderTextColor="#64748b"
             keyboardType="numeric"
-            onFocus={() => setFocusedInput('burstTime')}
-            onBlur={() => setFocusedInput(null)}
+            onFocus={() => setInputFocused('burstTime')}
+            onBlur={() => setInputFocused(null)}
+          />
+        </View>
+
+        {/* Priority input for priority scheduling (future) */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Priority (Optional)</Text>
+          <TextInput
+            style={[
+              styles.textInput,
+              inputFocused === 'priority' && styles.textInputFocused,
+            ]}
+            value={priority}
+            onChangeText={setPriority}
+            placeholder="Ưu tiên (số càng nhỏ càng cao)..."
+            placeholderTextColor="#64748b"
+            keyboardType="numeric"
+            onFocus={() => setInputFocused('priority')}
+            onBlur={() => setInputFocused(null)}
           />
         </View>
 
@@ -136,15 +196,9 @@ export const ProcessInput: React.FC<ProcessInputProps> = ({
           onPress={handleAddProcess}
           activeOpacity={0.8}
         >
-          <Text style={styles.primaryButtonText}>➕ Thêm Process</Text>
+          <Text style={styles.primaryButtonText}>+ Thêm Process</Text>
         </TouchableOpacity>
-      </Animated.View>
-
-      {/* Algorithm Selector below the Add Process card */}
-      <AlgorithmSelector
-        selectedAlgorithm={selectedAlgorithm}
-        onAlgorithmChange={onAlgorithmChange}
-      />
+      </View>
     </View>
   );
 };
