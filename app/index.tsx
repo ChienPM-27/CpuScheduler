@@ -1,223 +1,234 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   ScrollView,
   Alert,
+  Animated,
 } from 'react-native';
 import { styles } from './styles';
 import { Process, FCFSResult } from './types';
 import { FCFS } from './algorithms/fcfs';
+import { ProcessInput } from '../components/ProcessInput';
+import { ProcessList } from '../components/ProcessList';
+import { ResultsTable } from '../components/ResultsTable';
+import { GanttChart } from '../components/GanttChart';
 
 export default function Index() {
   const [processes, setProcesses] = useState<Process[]>([]);
-  const [processId, setProcessId] = useState('');
-  const [arrivalTime, setArrivalTime] = useState('');
-  const [burstTime, setBurstTime] = useState('');
   const [result, setResult] = useState<FCFSResult | null>(null);
+  
+  // Animation refs
+  const headerFadeAnim = useRef(new Animated.Value(0)).current;
+  const headerSlideAnim = useRef(new Animated.Value(-50)).current;
 
-  const addProcess = () => {
-    if (!processId.trim() || !arrivalTime.trim() || !burstTime.trim()) {
-      Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ thông tin process');
-      return;
+  useEffect(() => {
+    // Header animation on mount
+    Animated.parallel([
+      Animated.timing(headerFadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(headerSlideAnim, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  const handleAddProcess = (newProcess: Process) => {
+    setProcesses(prevProcesses => [...prevProcesses, newProcess]);
+    // Clear results when adding new process
+    if (result) {
+      setResult(null);
     }
-
-    const arrival = parseInt(arrivalTime);
-    const burst = parseInt(burstTime);
-
-    if (isNaN(arrival) || isNaN(burst) || arrival < 0 || burst <= 0) {
-      Alert.alert('Lỗi', 'Arrival time phải >= 0 và Burst time phải > 0');
-      return;
-    }
-
-    if (processes.find(p => p.id === processId.trim())) {
-      Alert.alert('Lỗi', 'Process ID đã tồn tại');
-      return;
-    }
-
-    const newProcess: Process = {
-      id: processId.trim(),
-      arrivalTime: arrival,
-      burstTime: burst,
-    };
-
-    setProcesses([...processes, newProcess]);
-    setProcessId('');
-    setArrivalTime('');
-    setBurstTime('');
   };
 
-  const removeProcess = (id: string) => {
-    setProcesses(processes.filter(p => p.id !== id));
+  const handleRemoveProcess = (id: string) => {
+    Alert.alert(
+      'Xác nhận xóa',
+      `Bạn có chắc chắn muốn xóa process ${id}?`,
+      [
+        {
+          text: 'Hủy',
+          style: 'cancel',
+        },
+        {
+          text: 'Xóa',
+          style: 'destructive',
+          onPress: () => {
+            setProcesses(prevProcesses => prevProcesses.filter(p => p.id !== id));
+            // Clear results when removing process
+            if (result) {
+              setResult(null);
+            }
+          },
+        },
+      ]
+    );
   };
 
-  const simulate = () => {
+  const handleSimulate = () => {
     if (processes.length === 0) {
-      Alert.alert('Lỗi', 'Vui lòng thêm ít nhất một process');
+      Alert.alert('Lỗi', 'Vui lòng thêm ít nhất một process để chạy simulation');
       return;
     }
 
-    const result = FCFS(processes);
-    setResult(result);
+    try {
+      const simulationResult = FCFS(processes);
+      setResult(simulationResult);
+      
+      // Show success message
+      Alert.alert(
+        'Thành công! 🎉',
+        `Đã hoàn thành simulation cho ${processes.length} processes`,
+        [{ text: 'OK', style: 'default' }]
+      );
+    } catch (error) {
+      Alert.alert('Lỗi', 'Có lỗi xảy ra khi chạy simulation. Vui lòng thử lại.');
+      console.error('Simulation error:', error);
+    }
   };
 
-  const clearAll = () => {
-    setProcesses([]);
-    setResult(null);
-    setProcessId('');
-    setArrivalTime('');
-    setBurstTime('');
+  const handleClearAll = () => {
+    Alert.alert(
+      'Xác nhận xóa tất cả',
+      'Bạn có chắc chắn muốn xóa tất cả processes và kết quả?',
+      [
+        {
+          text: 'Hủy',
+          style: 'cancel',
+        },
+        {
+          text: 'Xóa tất cả',
+          style: 'destructive',
+          onPress: () => {
+            setProcesses([]);
+            setResult(null);
+          },
+        },
+      ]
+    );
   };
+
+  const existingProcessIds = processes.map(p => p.id);
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>CPU Scheduler Simulator</Text>
-          <Text style={styles.headerSubtitle}>
-            Thuật toán: First Come First Served (FCFS)
+      <ScrollView 
+        style={styles.container} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Animated Header */}
+        <Animated.View 
+          style={[
+            styles.header,
+            {
+              opacity: headerFadeAnim,
+              transform: [{ translateY: headerSlideAnim }]
+            }
+          ]}
+        >
+          <Text style={styles.headerTitle}>
+            🖥️ CPU SCHEDULER SIMULATOR
           </Text>
-        </View>
+          <View style={{
+            width: 60,
+            height: 4,
+            backgroundColor: '#3b82f6',
+            borderRadius: 2,
+            marginTop: 12,
+          }} />
+        </Animated.View>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Thêm Process</Text>
+        {/* Process Input Component */}
+        <ProcessInput
+          onAddProcess={handleAddProcess}
+          existingProcessIds={existingProcessIds}
+        />
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Process ID:</Text>
-            <TextInput
-              style={styles.textInput}
-              value={processId}
-              onChangeText={setProcessId}
-              placeholder="Nhập Process ID (vd: P1)"
-            />
-          </View>
+        {/* Process List Component */}
+        <ProcessList
+          processes={processes}
+          onRemoveProcess={handleRemoveProcess}
+          onSimulate={handleSimulate}
+          onClearAll={handleClearAll}
+        />
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Arrival Time:</Text>
-            <TextInput
-              style={styles.textInput}
-              value={arrivalTime}
-              onChangeText={setArrivalTime}
-              placeholder="Nhập thời gian đến"
-              keyboardType="numeric"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Burst Time:</Text>
-            <TextInput
-              style={styles.textInput}
-              value={burstTime}
-              onChangeText={setBurstTime}
-              placeholder="Nhập thời gian thực thi"
-              keyboardType="numeric"
-            />
-          </View>
-
-          <TouchableOpacity style={styles.primaryButton} onPress={addProcess}>
-            <Text style={styles.primaryButtonText}>Thêm Process</Text>
-          </TouchableOpacity>
-        </View>
-
-        {processes.length > 0 && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Danh sách Processes</Text>
-            <View style={styles.table}>
-              <View style={styles.tableHeader}>
-                <Text style={styles.tableHeaderText}>ID</Text>
-                <Text style={styles.tableHeaderText}>AT</Text>
-                <Text style={styles.tableHeaderText}>BT</Text>
-                <Text style={styles.tableHeaderText}>Action</Text>
-              </View>
-
-              {processes.map((process, index) => (
-                <View key={process.id} style={[styles.tableRow, index % 2 === 1 && styles.tableRowEven]}>
-                  <Text style={styles.tableCellText}>{process.id}</Text>
-                  <Text style={styles.tableCellText}>{process.arrivalTime}</Text>
-                  <Text style={styles.tableCellText}>{process.burstTime}</Text>
-                  <TouchableOpacity style={styles.deleteButton} onPress={() => removeProcess(process.id)}>
-                    <Text style={styles.deleteButtonText}>Xóa</Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-
-            <View style={styles.buttonRow}>
-              <TouchableOpacity style={styles.successButton} onPress={simulate}>
-                <Text style={styles.buttonText}>Chạy Simulation</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.dangerButton} onPress={clearAll}>
-                <Text style={styles.buttonText}>Xóa Tất Cả</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
+        {/* Results Section */}
         {result && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Kết Quả FCFS</Text>
-            <View style={[styles.table, { marginBottom: 16 }]}>
-              <View style={styles.tableHeader}>
-                <Text style={styles.tableHeaderText}>ID</Text>
-                <Text style={styles.tableHeaderText}>AT</Text>
-                <Text style={styles.tableHeaderText}>BT</Text>
-                <Text style={styles.tableHeaderText}>CT</Text>
-                <Text style={styles.tableHeaderText}>TAT</Text>
-                <Text style={styles.tableHeaderText}>WT</Text>
-              </View>
+          <>
+            {/* Results Table Component */}
+            <ResultsTable result={result} />
 
-              {result.processes.map((process, index) => (
-                <View key={process.id} style={[styles.tableRow, index % 2 === 1 && styles.tableRowEven]}>
-                  <Text style={styles.tableCellText}>{process.id}</Text>
-                  <Text style={styles.tableCellText}>{process.arrivalTime}</Text>
-                  <Text style={styles.tableCellText}>{process.burstTime}</Text>
-                  <Text style={styles.tableCellText}>{process.completionTime}</Text>
-                  <Text style={styles.tableCellText}>{process.turnaroundTime}</Text>
-                  <Text style={styles.tableCellText}>{process.waitingTime}</Text>
-                </View>
-              ))}
-            </View>
-
-            <View style={styles.ganttContainer}>
-              <Text style={styles.ganttLabel}>Gantt Chart:</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={styles.ganttScrollView}>
-                  {result.ganttChart.map((segment, index) => (
-                    <View key={index} style={styles.ganttItem}>
-                      <View style={styles.ganttBlock}>
-                        <Text style={styles.ganttBlockText}>{segment.processId}</Text>
-                      </View>
-                      <View style={styles.ganttTimeContainer}>
-                        <Text style={styles.ganttTimeText}>{segment.startTime}</Text>
-                        <Text style={styles.ganttTimeText}>{segment.endTime}</Text>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
-
-            <View style={styles.statsContainer}>
-              <Text style={styles.statsTitle}>Thống Kê:</Text>
-              <Text style={styles.statsText}>
-                • Thời gian chờ trung bình: {result.averageWaitingTime.toFixed(2)} đơn vị
-              </Text>
-              <Text style={styles.statsText}>
-                • Thời gian hoàn thành trung bình: {result.averageTurnaroundTime.toFixed(2)} đơn vị
-              </Text>
-            </View>
-          </View>
+            {/* Gantt Chart Component */}
+            <GanttChart result={result} />
+          </>
         )}
 
+        {/* Legend Section */}
         <View style={styles.legend}>
-          <Text style={styles.legendTitle}>Chú Thích:</Text>
-          <Text style={styles.legendText}>• AT: Arrival Time</Text>
-          <Text style={styles.legendText}>• BT: Burst Time</Text>
-          <Text style={styles.legendText}>• CT: Completion Time</Text>
-          <Text style={styles.legendText}>• TAT: Turnaround Time = CT - AT</Text>
+          <Text style={styles.legendTitle}>📚 Chú Thích:</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+            <View style={{ width: '48%', marginBottom: 8 }}>
+              <Text style={styles.legendText}>• AT: Arrival Time</Text>
+            </View>
+            <View style={{ width: '48%', marginBottom: 8 }}>
+              <Text style={styles.legendText}>• BT: Burst Time</Text>
+            </View>
+            <View style={{ width: '48%', marginBottom: 8 }}>
+              <Text style={styles.legendText}>• CT: Completion Time</Text>
+            </View>
+            <View style={{ width: '48%', marginBottom: 8 }}>
+              <Text style={styles.legendText}>• TAT: Turnaround Time</Text>
+            </View>
+          </View>
           <Text style={styles.legendText}>• WT: Waiting Time = TAT - BT</Text>
+          <Text style={styles.legendText}>• TAT: Turnaround Time = CT - AT</Text>
+          
+          {/* Algorithm Explanation */}
+          <View style={{
+            marginTop: 16,
+            padding: 16,
+            backgroundColor: '#334155',
+            borderRadius: 12,
+            borderLeftWidth: 4,
+            borderLeftColor: '#3b82f6',
+          }}>
+            <Text style={[styles.legendText, { color: '#3b82f6', fontWeight: '700', marginBottom: 8 }]}>
+              💡 Thuật toán FCFS:
+            </Text>
+            <Text style={[styles.legendText, { fontSize: 14, lineHeight: 20 }]}>
+              Processes được thực thi theo thứ tự đến trước, phục vụ trước. 
+              Thuật toán đơn giản nhất nhưng có thể gây ra hiện tượng Convoy Effect 
+              khi process có burst time dài đến trước.
+            </Text>
+          </View>
+        </View>
+
+        {/* Footer */}
+        <View style={{
+          alignItems: 'center',
+          paddingVertical: 20,
+          marginTop: 20,
+        }}>
+          <Text style={{
+            color: '#64748b',
+            fontSize: 14,
+            fontWeight: '500',
+          }}>
+            Made with ❤️ by ChienPM-27
+          </Text>
+          <Text style={{
+            color: '#475569',
+            fontSize: 12,
+            marginTop: 4,
+          }}>
+            Version 1.0.0
+          </Text>
         </View>
       </ScrollView>
     </View>
