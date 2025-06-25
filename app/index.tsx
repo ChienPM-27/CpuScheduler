@@ -59,7 +59,12 @@ export default function Index() {
           text: 'Xóa',
           style: 'destructive',
           onPress: () => {
-            setProcesses(prevProcesses => prevProcesses.filter(p => p.id !== id));
+            console.log('Removing process:', id); // Debug log
+            setProcesses(prevProcesses => {
+              const newProcesses = prevProcesses.filter(p => p.id !== id);
+              console.log('Updated processes:', newProcesses); // Debug log
+              return newProcesses;
+            });
             // Clear results when removing process
             if (result) {
               setResult(null);
@@ -144,19 +149,26 @@ export default function Index() {
           }} />
         </Animated.View>
 
-        {/* Process Input Component */}
-        <ProcessInput
-          onAddProcess={handleAddProcess}
-          existingProcessIds={existingProcessIds}
-        />
+        {/* Process Input and List in Same Row */}
+        <View style={styles.twoColumnContainer}>
+          {/* Process Input Component */}
+          <View style={styles.leftColumn}>
+            <ProcessInput
+              onAddProcess={handleAddProcess}
+              existingProcessIds={existingProcessIds}
+            />
+          </View>
 
-        {/* Process List Component */}
-        <ProcessList
-          processes={processes}
-          onRemoveProcess={handleRemoveProcess}
-          onSimulate={handleSimulate}
-          onClearAll={handleClearAll}
-        />
+          {/* Process List Component */}
+          <View style={styles.rightColumn}>
+            <ProcessList
+              processes={processes}
+              onRemoveProcess={handleRemoveProcess}
+              onSimulate={handleSimulate}
+              onClearAll={handleClearAll}
+            />
+          </View>
+        </View>
 
         {/* Results Section */}
         {result && (

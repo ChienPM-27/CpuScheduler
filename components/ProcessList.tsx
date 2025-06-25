@@ -1,12 +1,12 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Animated,
-} from 'react-native';
 import { styles } from '@/app/styles';
 import { Process } from '@/app/types';
+import React from 'react';
+import {
+  Animated,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 interface ProcessListProps {
   processes: Process[];
@@ -23,12 +23,15 @@ export const ProcessList: React.FC<ProcessListProps> = ({
 }) => {
   if (processes.length === 0) {
     return (
-      <View style={styles.emptyState}>
-        <Text style={styles.emptyStateIcon}>📝</Text>
-        <Text style={styles.emptyStateText}>
-          Chưa có process nào được thêm.{'\n'}
-          Hãy thêm process đầu tiên để bắt đầu!
-        </Text>
+      <View style={[styles.card, { height: 'auto', minHeight: 200 }]}>
+        <Text style={styles.cardTitle}>📋 Danh sách Processes (0)</Text>
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateIcon}>📝</Text>
+          <Text style={styles.emptyStateText}>
+            Chưa có process nào được thêm.{'\n'}
+            Hãy thêm process đầu tiên để bắt đầu!
+          </Text>
+        </View>
       </View>
     );
   }
@@ -43,10 +46,13 @@ export const ProcessList: React.FC<ProcessListProps> = ({
             <Text style={styles.processId}>{process.id}</Text>
             <TouchableOpacity
               style={styles.deleteButton}
-              onPress={() => onRemoveProcess(process.id)}
+              onPress={() => {
+                console.log('Delete button pressed for:', process.id);
+                onRemoveProcess(process.id);
+              }}
               activeOpacity={0.7}
             >
-              <Text style={styles.deleteButtonText}>🗑️ Xóa</Text>
+              <Text style={styles.deleteButtonText}>Xóa</Text>
             </TouchableOpacity>
           </View>
           
