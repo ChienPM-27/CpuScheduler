@@ -36,20 +36,25 @@ export const ProcessList: React.FC<ProcessListProps> = ({
     );
   }
 
+  const handleRemoveProcess = (processId: string) => {
+    console.log('ProcessList: Attempting to remove process with ID:', processId);
+    console.log('ProcessList: Current processes:', processes.map(p => ({ id: p.id, arrivalTime: p.arrivalTime, burstTime: p.burstTime })));
+    
+    // Call the parent's remove function
+    onRemoveProcess(processId);
+  };
+
   return (
     <View style={styles.card}>
       <Text style={styles.cardTitle}>📋 Danh sách Processes ({processes.length})</Text>
       
       {processes.map((process, index) => (
-        <Animated.View key={process.id} style={styles.processCard}>
+        <Animated.View key={`${process.id}-${index}`} style={styles.processCard}>
           <View style={styles.processCardHeader}>
             <Text style={styles.processId}>{process.id}</Text>
             <TouchableOpacity
               style={styles.deleteButton}
-              onPress={() => {
-                console.log('Delete button pressed for:', process.id);
-                onRemoveProcess(process.id);
-              }}
+              onPress={() => handleRemoveProcess(process.id)}
               activeOpacity={0.7}
             >
               <Text style={styles.deleteButtonText}>Xóa</Text>

@@ -12,11 +12,11 @@ import { ProcessInput } from '../components/ProcessInput';
 import { ProcessList } from '../components/ProcessList';
 import { ResultsTable } from '../components/ResultsTable';
 import { FCFS } from './algorithms/fcfs';
+import { RoundRobin } from './algorithms/roundrobin';
 import { SJF } from './algorithms/sjf';
 import { SRTF } from './algorithms/srtf';
-import { RoundRobin } from './algorithms/roundrobin';
 import { styles } from './styles';
-import { FCFSResult, SJFResult, SRTFResult, RoundRobinResult, Process } from './types';
+import { FCFSResult, Process, RoundRobinResult, SJFResult, SRTFResult } from './types';
 
 type AllResults = FCFSResult | SJFResult | SRTFResult | RoundRobinResult;
 
@@ -54,7 +54,12 @@ export default function Index() {
     }
   };
 
+  
+
   const handleRemoveProcess = (id: string) => {
+    console.log('Index: Received request to remove process:', id);
+    console.log('Index: Current processes before removal:', processes.map(p => ({ id: p.id, arrivalTime: p.arrivalTime, burstTime: p.burstTime })));
+    
     Alert.alert(
       'Xác nhận xóa',
       `Bạn có chắc chắn muốn xóa process ${id}?`,
@@ -67,12 +72,25 @@ export default function Index() {
           text: 'Xóa',
           style: 'destructive',
           onPress: () => {
-            console.log('Removing process:', id); // Debug log
+            console.log('Index: User confirmed removal of process:', id);
+            
             setProcesses(prevProcesses => {
+              const processToRemove = prevProcesses.find(p => p.id === id);
+              console.log('Index: Process to remove:', processToRemove);
+              
               const newProcesses = prevProcesses.filter(p => p.id !== id);
-              console.log('Updated processes:', newProcesses); // Debug log
+              console.log('Index: Processes after filtering:', newProcesses.map(p => ({ id: p.id, arrivalTime: p.arrivalTime, burstTime: p.burstTime })));
+              
+              if (newProcesses.length === prevProcesses.length) {
+                console.warn('Index: WARNING - No process was removed! ID might not match.');
+                console.warn('Index: Available IDs:', prevProcesses.map(p => p.id));
+                console.warn('Index: Searching for ID:', id);
+                console.warn('Index: ID type:', typeof id);
+              }
+              
               return newProcesses;
             });
+            
             // Clear results when removing process
             if (result) {
               setResult(null);
